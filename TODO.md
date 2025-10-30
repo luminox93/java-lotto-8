@@ -24,6 +24,9 @@
   - [ ] 교집합 개수 계산
 - [ ] `contains(int number)` 구현
   - [ ] 보너스 번호 확인용
+- [ ] `LottoDto toDto()` 메서드 (선택사항)
+  - [ ] 정렬된 번호로 DTO 생성
+  - [ ] View가 Lotto 도메인 접근 차단
 
 ### LottoGenerator 클래스
 - [ ] 로또 생성 책임 분리
@@ -83,6 +86,36 @@
 - [ ] `double calculateProfitRate(int purchaseAmount)` - 수익률 계산
   - [ ] (총 상금 / 구입 금액) × 100
   - [ ] 반올림은 출력 단계에서 처리
+- [ ] `StatisticsDto toDto()` 메서드
+  - [ ] 각 등수별 개수와 상금을 DTO로 변환
+  - [ ] View가 Rank enum과 LottoResult 내부를 모르도록
+
+---
+
+## 📦 DTO 레이어
+
+### StatisticsDto
+- [ ] 당첨 통계 출력용 데이터 전달 객체
+- [ ] 필드
+  - [ ] `int fifthCount` - 5등 개수
+  - [ ] `int fourthCount` - 4등 개수
+  - [ ] `int thirdCount` - 3등 개수
+  - [ ] `int secondCount` - 2등 개수
+  - [ ] `int firstCount` - 1등 개수
+  - [ ] `long fifthPrize` - 5등 상금
+  - [ ] `long fourthPrize` - 4등 상금
+  - [ ] `long thirdPrize` - 3등 상금
+  - [ ] `long secondPrize` - 2등 상금
+  - [ ] `long firstPrize` - 1등 상금
+- [ ] Getter만 제공 (불변)
+- [ ] View가 Domain(Rank, LottoResult)을 모르도록 함
+
+### LottoDto (선택사항)
+- [ ] 로또 번호 출력용 데이터 전달 객체
+- [ ] 필드
+  - [ ] `List<Integer> numbers` - 정렬된 번호
+- [ ] Lotto → LottoDto 변환
+- [ ] View가 Lotto 도메인을 직접 접근하지 않도록
 
 ---
 
@@ -97,16 +130,20 @@
 - [ ] `void run()` 메서드 - 게임 진행
   - [ ] 구입 금액 입력 및 검증 (무한 루프 + 예외 처리)
   - [ ] 로또 발행
-  - [ ] 발행된 로또 출력
+  - [ ] 발행된 로또 출력 (Lotto → LottoDto 변환 후 전달, 또는 직접 전달)
   - [ ] 당첨 번호 입력 및 검증
   - [ ] 보너스 번호 입력 및 검증
   - [ ] WinningNumbers 객체 생성
-  - [ ] 당첨 결과 계산
-  - [ ] 당첨 통계 출력
+  - [ ] 당첨 결과 계산 (LottoResult)
+  - [ ] **LottoResult → StatisticsDto 변환**
+  - [ ] 당첨 통계 출력 (StatisticsDto 전달)
   - [ ] 수익률 출력
 - [ ] 예외 처리 패턴
   - [ ] while(true) + try-catch로 재입력 구현
   - [ ] 각 입력 단계별로 독립적으로 처리
+- [ ] **Domain → DTO 변환 책임**
+  - [ ] `result.toDto()`를 호출하여 DTO 생성
+  - [ ] View에 DTO 전달
 
 ---
 
@@ -142,13 +179,17 @@
   - [ ] "N개를 구매했습니다." 출력
   - [ ] 각 로또마다 번호 정렬 후 출력
   - [ ] 형식: `[8, 21, 23, 41, 42, 43]`
-- [ ] `void printStatistics(LottoResult result)` - 당첨 통계 출력
+  - [ ] **대안**: `List<LottoDto>`를 받아서 Domain 의존성 제거
+- [ ] `void printStatistics(StatisticsDto dto)` - 당첨 통계 출력
+  - [ ] **DTO 사용으로 Domain(Rank, LottoResult) 의존성 제거**
   - [ ] 빈 줄 출력
   - [ ] "당첨 통계" 출력
   - [ ] "---" 출력
   - [ ] 5등부터 1등까지 순서대로 출력
   - [ ] 형식: "3개 일치 (5,000원) - 1개"
-  - [ ] 금액 포맷팅: String.format("%,d", prize)
+  - [ ] DTO에서 개수와 상금을 직접 가져옴
+  - [ ] 금액 포맷팅: String.format("%,d", dto.getFifthPrize())
+  - [ ] **View는 Rank enum을 몰라도 됨**
 - [ ] `void printProfitRate(double profitRate)` - 수익률 출력
   - [ ] 형식: "총 수익률은 62.5%입니다."
   - [ ] String.format("%.1f", profitRate) 사용
