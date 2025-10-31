@@ -1,43 +1,58 @@
 # 🔨 구현 상세 체크리스트
 
-## 🏗️ 도메인 클래스 구조
+> 💡 설계 원칙과 이유는 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)를 참고하세요.
 
-### Lottery 인터페이스
-- [ ] 복권 공통 인터페이스 정의
-- [ ] `List<Integer> getNumbers()` - 번호 조회
-- [ ] `int countMatches(List<Integer> winningNumbers)` - 일치 개수 확인
-- [ ] `boolean contains(int number)` - 특정 번호 포함 여부
+---
+
+## 📐 설계 원칙 확인
+
+### YAGNI (You Aren't Gonna Need It)
+- [ ] ❌ Lottery 인터페이스 만들지 않기 (현재 요구사항에 로또만 있음)
+- [ ] ❌ 불필요한 추상화 지양
+
+### Tell, Don't Ask
+- [ ] ✅ getter 최소화, 비즈니스 메서드 제공
+- [ ] ❌ `sortedNumbers()` 같은 View 전용 getter 제거
+
+### DTO 사용
+- [ ] ✅ Domain 객체를 View에 직접 노출하지 않기
+- [ ] ✅ `toTicketDto()`, `toStatisticsDto()` 변환 메서드 제공
+
+---
+
+## 🏗️ 도메인 클래스 구조
 
 ### Lotto 클래스 (불변 객체)
 - [ ] `private final List<Integer> numbers` 필드
-- [ ] 생성자에서 방어적 복사 구현
-  - [ ] `new ArrayList<>(numbers)`로 복사하여 저장
+- [ ] 생성자: `List.copyOf(numbers)` 방어적 복사
   - [ ] 외부 리스트 변경이 내부에 영향 안 주도록
-- [ ] `getNumbers()` 메서드에서도 방어적 복사
-  - [ ] `new ArrayList<>(numbers)` 반환
-  - [ ] 또는 `List.copyOf(numbers)` (Java 10+)
-- [ ] 검증 로직 추가
-  - [ ] 6개 검증 (이미 있음)
+- [ ] 생성자: `LottoValidator.validateNumbers(numbers, policy)` 호출
+- [ ] `numbers()` 메서드: 방어적 복사 반환 (필요시만 - Tell, Don't Ask)
+  - [ ] `List.copyOf(numbers)` 반환
+- [ ] 검증 로직 (LottoValidator에 위임)
+  - [ ] 6개 검증
   - [ ] 1~45 범위 검증
-  - [ ] 중복 검증 (Set 크기 비교 또는 stream().distinct())
-- [ ] `countMatches(List<Integer> winningNumbers)` 구현
+  - [ ] 중복 검증
+- [ ] ✅ `countMatches(List<Integer> winningNumbers)` 비즈니스 메서드
   - [ ] 교집합 개수 계산
-- [ ] `contains(int number)` 구현
+- [ ] ✅ `contains(int number)` 비즈니스 메서드
   - [ ] 보너스 번호 확인용
-- [ ] `LottoDto toDto()` 메서드 (선택사항)
-  - [ ] 정렬된 번호로 DTO 생성
-  - [ ] View가 Lotto 도메인 접근 차단
+- [ ] ✅ `toTicketDto()` DTO 변환 메서드 (필수!)
+  - [ ] 정렬된 번호로 LottoTicketDto 생성
+  - [ ] View가 Lotto 도메인 직접 접근 차단
+- [ ] ❌ `sortedNumbers()` 같은 View 전용 getter 제거
+  - [ ] View를 위한 메서드는 DTO로 대체
 
 ### LottoGenerator 클래스
-- [ ] 로또 생성 책임 분리
+- [ ] 로또 생성 책임 분리 (Lotto는 도메인 객체, 생성은 별도 책임)
+- [ ] 필드: `private final LottoPolicy policy`
 - [ ] `List<Lotto> generate(int count)` 메서드
   - [ ] count만큼 반복
   - [ ] 각각 `createLotto()` 호출
 - [ ] `private Lotto createLotto()` 메서드
-  - [ ] `Randoms.pickUniqueNumbersInRange(1, 45, 6)` 사용
+  - [ ] `Randoms.pickUniqueNumbersInRange(policy.minNumber(), policy.maxNumber(), policy.numberCount())` 사용
   - [ ] 반환값으로 새 Lotto 생성
-- [ ] 테스트를 위한 확장 가능성
-  - [ ] 인터페이스 분리 또는 상속 고려
+- [ ] ❌ 인터페이스 만들지 않기 (YAGNI - 테스트는 고정 번호로 Lotto 직접 생성)
 
 ### WinningNumbers 클래스
 - [ ] 당첨 번호 6개 + 보너스 번호 1개 관리
@@ -54,96 +69,123 @@
 
 ### Rank Enum
 - [ ] 등수 상수 정의
-  - [ ] `FIRST(6, false, 2_000_000_000)`
-  - [ ] `SECOND(5, true, 30_000_000)`
-  - [ ] `THIRD(5, false, 1_500_000)`
-  - [ ] `FOURTH(4, false, 50_000)`
-  - [ ] `FIFTH(3, false, 5_000)`
-  - [ ] `MISS(0, false, 0)` - 낙첨
-- [ ] 필드
+  - [ ] `FIRST(6, false, 2_000_000_000L)`
+  - [ ] `SECOND(5, true, 30_000_000L)`
+  - [ ] `THIRD(5, false, 1_500_000L)`
+  - [ ] `FOURTH(4, false, 50_000L)`
+  - [ ] `FIFTH(3, false, 5_000L)`
+  - [ ] `MISS(0, false, 0L)` - 낙첨
+- [ ] 필드 (모두 private final)
   - [ ] `int matchCount` - 일치 개수
   - [ ] `boolean bonusMatch` - 보너스 일치 여부
   - [ ] `long prize` - 상금
-- [ ] `static Rank valueOf(int matchCount, boolean bonusMatch)` 메서드
+- [ ] `static Rank from(int matchCount, boolean bonusMatch)` 정적 팩토리 메서드
   - [ ] matchCount와 bonusMatch로 등수 판정
-  - [ ] 조건: 6개 → FIRST
-  - [ ] 조건: 5개 + bonus → SECOND
-  - [ ] 조건: 5개 → THIRD
-  - [ ] 조건: 4개 → FOURTH
-  - [ ] 조건: 3개 → FIFTH
+  - [ ] 6개 → FIRST
+  - [ ] 5개 + bonus → SECOND
+  - [ ] 5개 → THIRD
+  - [ ] 4개 → FOURTH
+  - [ ] 3개 → FIFTH
   - [ ] 그 외 → MISS
-- [ ] `long getPrize()` - 상금 반환
-- [ ] `int getMatchCount()` - 일치 개수 반환
+- [ ] `long prize()` - 상금 반환 (getter이지만 Domain 내부에서만 사용)
 
 ### LottoResult 클래스
 - [ ] 당첨 결과 집계
-- [ ] `private final Map<Rank, Integer> result` - 등수별 개수
-- [ ] 생성자에서 Map 초기화 (모든 Rank를 0개로)
+- [ ] `private final Map<Rank, Integer> result` - 등수별 개수 (EnumMap 권장)
+- [ ] 생성자: Map 초기화 (모든 Rank를 0개로)
 - [ ] `void addRank(Rank rank)` - 등수 추가
-- [ ] `int getCount(Rank rank)` - 특정 등수 개수 조회
+- [ ] `int countOf(Rank rank)` - 특정 등수 개수 조회
 - [ ] `long calculateTotalPrize()` - 총 상금 계산
   - [ ] 각 등수별 (개수 × 상금) 합산
 - [ ] `double calculateProfitRate(int purchaseAmount)` - 수익률 계산
   - [ ] (총 상금 / 구입 금액) × 100
   - [ ] 반올림은 출력 단계에서 처리
-- [ ] `StatisticsDto toDto()` 메서드
+- [ ] ✅ `StatisticsDto toStatisticsDto()` DTO 변환 메서드 (필수!)
   - [ ] 각 등수별 개수와 상금을 DTO로 변환
   - [ ] View가 Rank enum과 LottoResult 내부를 모르도록
+
+### LottoValidator 클래스
+- [ ] 검증 로직 모음 (static 메서드)
+- [ ] `validateNumbers(List<Integer> numbers, LottoPolicy policy)`
+  - [ ] 6개 검증: `numbers.size() != policy.numberCount()`
+  - [ ] 1~45 범위 검증: `number < policy.minNumber() || number > policy.maxNumber()`
+  - [ ] 중복 검증: `numbers.size() != new HashSet<>(numbers).size()`
+  - [ ] 실패 시 `IllegalArgumentException` 발생
+
+### LottoPolicy 클래스
+- [ ] 정책 상수 정의 (public static final)
+- [ ] `MIN_NUMBER = 1`
+- [ ] `MAX_NUMBER = 45`
+- [ ] `NUMBER_COUNT = 6`
+- [ ] `PRICE = 1000`
+- [ ] getter 메서드: `minNumber()`, `maxNumber()`, `numberCount()`, `price()`
 
 ---
 
 ## 📦 DTO 레이어
 
-### StatisticsDto
-- [ ] 당첨 통계 출력용 데이터 전달 객체
-- [ ] 필드
-  - [ ] `int fifthCount` - 5등 개수
-  - [ ] `int fourthCount` - 4등 개수
-  - [ ] `int thirdCount` - 3등 개수
-  - [ ] `int secondCount` - 2등 개수
-  - [ ] `int firstCount` - 1등 개수
-  - [ ] `long fifthPrize` - 5등 상금
-  - [ ] `long fourthPrize` - 4등 상금
-  - [ ] `long thirdPrize` - 3등 상금
-  - [ ] `long secondPrize` - 2등 상금
-  - [ ] `long firstPrize` - 1등 상금
-- [ ] Getter만 제공 (불변)
-- [ ] View가 Domain(Rank, LottoResult)을 모르도록 함
+### LottoTicketDto
+- [ ] ✅ 로또 번호 출력용 데이터 전달 객체 (필수!)
+- [ ] `record LottoTicketDto(List<Integer> numbers)`
+- [ ] 정렬된 번호를 담음
+- [ ] View가 Lotto 도메인을 직접 접근하지 않도록 차단
 
-### LottoDto (선택사항)
-- [ ] 로또 번호 출력용 데이터 전달 객체
-- [ ] 필드
-  - [ ] `List<Integer> numbers` - 정렬된 번호
-- [ ] Lotto → LottoDto 변환
-- [ ] View가 Lotto 도메인을 직접 접근하지 않도록
+### StatisticsDto
+- [ ] ✅ 당첨 통계 출력용 데이터 전달 객체 (필수!)
+- [ ] `record StatisticsDto(...)` 형태
+- [ ] 필드 (Flat 구조 - 간단함 우선)
+  - [ ] `int fifthCount, long fifthPrize`
+  - [ ] `int fourthCount, long fourthPrize`
+  - [ ] `int thirdCount, long thirdPrize`
+  - [ ] `int secondCount, long secondPrize`
+  - [ ] `int firstCount, long firstPrize`
+- [ ] record는 자동으로 getter 생성 (데이터 전달 목적이므로 OK)
+- [ ] View가 Domain(Rank, LottoResult)을 모르도록 함
 
 ---
 
-## 🎮 Controller 레이어
+## ⚙️ Service 레이어
 
-### LottoGame 클래스
+### 입력 Reader 클래스들
+- [ ] `LottoPurchaseAmountReader`: 구입 금액 입력 및 검증
+- [ ] `LottoWinningInputReader`: 당첨 번호, 보너스 번호 입력 및 검증
+- [ ] 검증 실패 시 `IllegalArgumentException` 발생
+
+### 출력 Presenter 클래스들
+- [ ] `LottoTicketPresenter`: 로또 출력 (Domain → DTO 변환)
+- [ ] `LottoResultPresenter`: 결과 출력 (Domain → DTO 변환)
+
+### 비즈니스 로직 클래스들
+- [ ] `LottoWinningChecker`: 당첨 확인
+- [ ] `LottoProfitCalculator`: 수익률 계산
+
+---
+
+## 🎮 Engine 레이어
+
+### RetryExecutor
+- [ ] 재입력 처리 (while + try-catch 패턴)
+- [ ] `execute(Supplier<T>)` 메서드
+- [ ] `IllegalArgumentException`만 처리
+
+### GameEngine
 - [ ] 전체 게임 플로우 제어
-- [ ] 의존성
-  - [ ] `InputView inputView`
-  - [ ] `OutputView outputView`
-  - [ ] `LottoGenerator lottoGenerator`
-- [ ] `void run()` 메서드 - 게임 진행
-  - [ ] 구입 금액 입력 및 검증 (무한 루프 + 예외 처리)
+- [ ] 필요한 Service/View 의존성 주입
+- [ ] `play()` 메서드
+  - [ ] 구입 금액 입력 (RetryExecutor 사용)
   - [ ] 로또 발행
-  - [ ] 발행된 로또 출력 (Lotto → LottoDto 변환 후 전달, 또는 직접 전달)
-  - [ ] 당첨 번호 입력 및 검증
-  - [ ] 보너스 번호 입력 및 검증
-  - [ ] WinningNumbers 객체 생성
-  - [ ] 당첨 결과 계산 (LottoResult)
-  - [ ] **LottoResult → StatisticsDto 변환**
-  - [ ] 당첨 통계 출력 (StatisticsDto 전달)
-  - [ ] 수익률 출력
-- [ ] 예외 처리 패턴
-  - [ ] while(true) + try-catch로 재입력 구현
-  - [ ] 각 입력 단계별로 독립적으로 처리
-- [ ] **Domain → DTO 변환 책임**
-  - [ ] `result.toDto()`를 호출하여 DTO 생성
-  - [ ] View에 DTO 전달
+  - [ ] ✅ Lotto → LottoTicketDto 변환
+  - [ ] 로또 출력
+  - [ ] 당첨 번호 입력 (RetryExecutor 사용)
+  - [ ] 보너스 번호 입력 (RetryExecutor 사용)
+  - [ ] WinningNumbers 생성
+  - [ ] 당첨 확인
+  - [ ] ✅ LottoResult → StatisticsDto 변환
+  - [ ] 결과 출력
+
+### GameModule
+- [ ] 의존성 조립 (DI 컨테이너)
+- [ ] GameEngine 생성 및 반환
 
 ---
 
@@ -174,27 +216,26 @@
   - [ ] `private List<Integer> parseNumbers(String input)` - 쉼표 분리
 
 ### OutputView 클래스
-- [ ] `void printLottos(List<Lotto> lottos)` - 구매 로또 출력
+- [ ] ✅ `void printTickets(List<LottoTicketDto> dtos)` - 구매 로또 출력 (DTO 사용!)
+  - [ ] ❌ `List<Lotto>` 직접 받지 않기
   - [ ] 빈 줄 출력
   - [ ] "N개를 구매했습니다." 출력
-  - [ ] 각 로또마다 번호 정렬 후 출력
+  - [ ] 각 dto.numbers() 출력
   - [ ] 형식: `[8, 21, 23, 41, 42, 43]`
-  - [ ] **대안**: `List<LottoDto>`를 받아서 Domain 의존성 제거
-- [ ] `void printStatistics(StatisticsDto dto)` - 당첨 통계 출력
-  - [ ] **DTO 사용으로 Domain(Rank, LottoResult) 의존성 제거**
+- [ ] ✅ `void printStatistics(StatisticsDto dto)` - 당첨 통계 출력 (DTO 사용!)
+  - [ ] ❌ Domain(Rank, LottoResult) 직접 받지 않기
   - [ ] 빈 줄 출력
   - [ ] "당첨 통계" 출력
   - [ ] "---" 출력
   - [ ] 5등부터 1등까지 순서대로 출력
   - [ ] 형식: "3개 일치 (5,000원) - 1개"
   - [ ] DTO에서 개수와 상금을 직접 가져옴
-  - [ ] 금액 포맷팅: String.format("%,d", dto.getFifthPrize())
-  - [ ] **View는 Rank enum을 몰라도 됨**
+  - [ ] 금액 포맷팅: `String.format("%,d", dto.fifthPrize())`
+  - [ ] View는 Rank enum을 모름
 - [ ] `void printProfitRate(double profitRate)` - 수익률 출력
   - [ ] 형식: "총 수익률은 62.5%입니다."
-  - [ ] String.format("%.1f", profitRate) 사용
+  - [ ] `String.format("%.1f", profitRate)` 사용
 - [ ] `void printError(String message)` - 에러 메시지 출력
-  - [ ] System.out.println(message)
 
 ---
 
@@ -401,3 +442,39 @@
 - [ ] 당첨 내역 계산 테스트
 - [ ] 수익률 계산 테스트
 - [ ] 예외 발생 테스트
+
+---
+
+## ⚠️ 중요 주의사항
+
+### 설계 원칙 준수
+- [ ] ❌ Lottery 인터페이스 만들지 않기 (YAGNI)
+- [ ] ❌ `sortedNumbers()` 같은 View 전용 getter 제거
+- [ ] ✅ `toTicketDto()`, `toStatisticsDto()` 필수 구현
+- [ ] ✅ View는 항상 DTO만 받기 (Domain 직접 의존 금지)
+
+### 프로그래밍 요구사항
+- [ ] indent depth 2 이하
+- [ ] 메서드 15라인 이하
+- [ ] else 예약어 사용 안 함
+- [ ] Enum 적용
+- [ ] 단위 테스트 작성 (UI 제외)
+
+### 커밋 규칙
+- [ ] [docs/CLAUDE.md](docs/CLAUDE.md) 참고
+- [ ] Claude 서명 사용 금지
+- [ ] AngularJS 커밋 컨벤션 준수
+
+---
+
+## ✅ 완료 기준
+
+- [ ] 모든 기능 요구사항 구현
+- [ ] 모든 프로그래밍 요구사항 준수
+- [ ] 모든 단위 테스트 통과
+- [ ] 설계 원칙 준수 확인
+  - [ ] Lottery 인터페이스 없음
+  - [ ] sortedNumbers() 메서드 없음
+  - [ ] DTO 변환 메서드 구현
+  - [ ] View는 DTO만 의존
+- [ ] 실행 결과가 요구사항과 일치
