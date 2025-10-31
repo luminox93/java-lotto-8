@@ -12,7 +12,7 @@
 <summary>펼쳐서 전체 목차 보기</summary>
 
 - [프로젝트 개요](#프로젝트-개요)
-- [설계 방향](#설계-방향) ⭐
+- [설계 고민](#설계-고민)
 - [구현할 기능 목록](#구현할-기능-목록) ⭐
 - [과제 진행 요구 사항](#과제-진행-요구-사항)
 - [기능 요구 사항](#기능-요구-사항)
@@ -40,36 +40,20 @@
 
 ---
 
-## 🎨 설계 방향
+## 🎨 설계 고민
 
-### 설계 원칙
+- 불필요한 추상화보다는 단순하고 읽기 쉬운 코드 작성
+- 객체는 데이터 노출보다 행동을 통한 협력 우선
+- 게임 규칙의 변경과 확장 가능성 고려
 
-#### YAGNI (You Aren't Gonna Need It)
-- 현재 요구사항에 필요하지 않은 인터페이스나 복잡한 패턴은 만들지 않습니다
-- 단순하고 읽기 쉬운 코드를 우선합니다
-
-#### Tell, Don't Ask
-- 도메인 객체는 데이터를 묻지 않고 행동을 요청하는 방식으로 설계합니다
-- 내부 상태를 getter로 노출하기보다는 비즈니스 로직을 메서드로 제공합니다
-
-#### 계층 간 의존성 분리
-- View와 Domain이 직접 의존하지 않도록 DTO를 활용합니다
-- 단방향 의존성을 유지합니다 (View → Service → Domain)
-
-### 전체 구조
-
-- **Domain**: 비즈니스 로직과 규칙을 담당
-- **DTO**: 계층 간 데이터 전달을 위한 객체
-- **Service**: 입력 검증 및 도메인 조합 로직
-- **View**: 입출력만 담당 (Domain을 직접 의존하지 않음)
-- **Engine**: 게임 플로우 제어 및 재입력 처리
+### 프로그램 구조
 
 ```mermaid
 graph TB
-    Engine[Engine Layer<br/>게임 플로우 제어] --> Service[Service Layer<br/>입력 검증 & 조합]
-    Service --> Domain[Domain Layer<br/>비즈니스 로직]
-    Service --> DTO[DTO Layer<br/>데이터 전달]
-    Service --> View[View Layer<br/>입출력]
+    Engine[게임 실행 제어] --> Service[입력 검증 & 로직 조합]
+    Service --> Domain[비즈니스 로직]
+    Service --> DTO[데이터 전달 객체]
+    Service --> View[입출력]
     Domain -.DTO 변환.-> DTO
     DTO -.전달.-> View
 
@@ -80,81 +64,31 @@ graph TB
     style View fill:#f87171,stroke:#ef4444,stroke-width:2px,color:#000
 ```
 
-### 정책 관리 및 확장성
-
-로또 게임의 규칙(범위, 개수, 가격 등)을 정책 객체로 분리하여 관리합니다.
-
-**현재 로또 정책:**
-- 로또 번호 범위 (1~45)
-- 로또 번호 개수 (6개)
-- 로또 가격 (1,000원)
-
-**장점:**
-- 규칙 변경 시 한 곳만 수정
-- 검증 로직에서 정책 참조
-- 테스트 시 정책 주입 가능
-- 다른 복권 게임으로 확장 가능
-
-#### 정책 객체 작동 방식
-
-```mermaid
-graph LR
-    Policy[LottoPolicy<br/>정책 객체] --> Validator[LottoValidator<br/>검증]
-    Policy --> Generator[LottoGenerator<br/>생성]
-
-    Validator --> Lotto[Lotto<br/>도메인 객체]
-    Generator --> Lotto
-
-    style Policy fill:#fbbf24,stroke:#f59e0b,stroke-width:3px,color:#000
-    style Validator fill:#60a5fa,stroke:#3b82f6,stroke-width:2px,color:#000
-    style Generator fill:#60a5fa,stroke:#3b82f6,stroke-width:2px,color:#000
-    style Lotto fill:#34d399,stroke:#10b981,stroke-width:2px,color:#000
-```
-
-#### 다른 복권 게임 확장 시나리오
-
-향후 연금복권, 스크래치 등 다른 복권 게임이 추가될 경우를 대비한 확장 구조입니다.
+### 확장 가능성
 
 ```mermaid
 graph TB
-    subgraph Current[현재 구현]
-        LP[LottoPolicy<br/>1-45, 6개, 1000원] --> LV[LottoValidator]
-        LP --> LG[LottoGenerator]
-        LV --> L[Lotto]
-        LG --> L
+    subgraph Current[현재: 로또]
+        LottoRule[규칙<br/>1-45, 6개] --> LottoGame[로또 게임]
     end
 
-    subgraph Future1[확장 1: 연금복권]
-        PP[PensionPolicy<br/>1-45, 7개, 5000원] --> PV[PensionValidator]
-        PP --> PGN[PensionGenerator]
-        PV --> P[Pension]
-        PGN --> P
+    subgraph Future1[추후: 연금복권]
+        PensionRule[규칙<br/>1-45, 7개] --> PensionGame[연금복권]
     end
 
-    subgraph Future2[확장 2: 스크래치]
-        SP[ScratchPolicy<br/>즉석 당첨, 1000원] --> SV[ScratchValidator]
-        SP --> SG[ScratchGenerator]
-        SV --> S[Scratch]
-        SG --> S
+    subgraph Future2[추후: 스크래치]
+        ScratchRule[규칙<br/>즉석당첨] --> ScratchGame[스크래치]
     end
 
-    Engine[GameEngine] --> Current
-    Engine -.향후 추가.-> Future1
-    Engine -.향후 추가.-> Future2
+    GameEngine[게임 엔진] --> Current
+    GameEngine -.향후 추가.-> Future1
+    GameEngine -.향후 추가.-> Future2
 
     style Current fill:#e0f2fe,stroke:#0ea5e9,stroke-width:2px
     style Future1 fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,stroke-dasharray: 5 5
     style Future2 fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,stroke-dasharray: 5 5
-    style LP fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
-    style L fill:#34d399,stroke:#10b981,stroke-width:2px,color:#000
-    style Engine fill:#a78bfa,stroke:#8b5cf6,stroke-width:3px,color:#000
+    style GameEngine fill:#a78bfa,stroke:#8b5cf6,stroke-width:3px,color:#000
 ```
-
-**확장 시 변경 범위:**
-- 새로운 정책 클래스 추가 (예: `PensionPolicy`, `ScratchPolicy`)
-- 새로운 도메인 객체 추가 (예: `Pension`, `Scratch`)
-- 새로운 검증/생성 클래스 추가
-- 기존 로또 코드는 변경 없음 (OCP 원칙)
 
 <br>
 
