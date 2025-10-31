@@ -24,8 +24,7 @@
   - [프로그래밍 요구 사항 3](#프로그래밍-요구-사항-3)
 - [라이브러리](#라이브러리)
 - [구현할 기능 목록](#구현할-기능-목록) ⭐
-- [설계 고민](#설계-고민) ⭐
-- [Lotto 클래스](#lotto-클래스)
+- [설계 방향](#설계-방향) ⭐
 
 </details>
 
@@ -469,47 +468,34 @@ flowchart LR
 - [ ] 보너스 번호 오류 시 보너스 번호만 재입력
 - [ ] 예외 발생 후 프로그램 종료하지 않고 계속 진행
 
-> 💡 구체적인 구현 방법과 테스트 케이스는 [TODO.md](TODO.md)를 참고하세요.
-
 <br>
 
 ---
 
 ## 🎨 설계 방향
 
-> 💡 구체적인 구현 방법과 설계 이유는 [TODO.md](TODO.md)를 참고하세요.
-> 💡 상세한 아키텍처 설계는 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)를 참고하세요.
+### 설계 원칙
 
-<br>
+#### YAGNI (You Aren't Gonna Need It)
+- 현재 요구사항에 필요하지 않은 인터페이스나 복잡한 패턴은 만들지 않습니다
+- 단순하고 읽기 쉬운 코드를 우선합니다
 
----
+#### Tell, Don't Ask
+- 도메인 객체는 데이터를 묻지 않고 행동을 요청하는 방식으로 설계합니다
+- 내부 상태를 getter로 노출하기보다는 비즈니스 로직을 메서드로 제공합니다
 
-## 🎫 Lotto 클래스
+#### 계층 간 의존성 분리
+- View와 Domain이 직접 의존하지 않도록 DTO를 활용합니다
+- 단방향 의존성을 유지합니다 (View → Service → Domain)
 
-제공된 `Lotto` 클래스를 사용하여 구현해야 한다.
+### 전체 구조
 
-- `Lotto`에 `numbers` 이외의 필드(인스턴스 변수)를 추가할 수 없다.
-- `numbers`의 접근 제어자인 `private`은 변경할 수 없다.
-- `Lotto`의 패키지를 변경할 수 있다.
+- **Domain**: 비즈니스 로직과 규칙을 담당
+- **DTO**: 계층 간 데이터 전달을 위한 객체
+- **Service**: 입력 검증 및 도메인 조합 로직
+- **View**: 입출력만 담당 (Domain을 직접 의존하지 않음)
+- **Engine**: 게임 플로우 제어 및 재입력 처리
 
-```java
-public class Lotto {
-    private final List<Integer> numbers;
-
-    public Lotto(List<Integer> numbers) {
-        validate(numbers);
-        this.numbers = numbers;
-    }
-
-    private void validate(List<Integer> numbers) {
-        if (numbers.size() != 6) {
-            throw new IllegalArgumentException("[ERROR] 로또 번호는 6개여야 합니다.");
-        }
-    }
-
-    // TODO: 추가 기능 구현
-}
-```
 
 <br>
 
