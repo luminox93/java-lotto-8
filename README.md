@@ -13,6 +13,7 @@
 
 - [프로젝트 개요](#프로젝트-개요)
 - [설계 고민](#설계-고민)
+- [전체 게임 플로우](#전체-게임-플로우) 📊
 - [구현할 기능 목록](#구현할-기능-목록) ⭐
 - [과제 진행 요구 사항](#과제-진행-요구-사항)
 - [기능 요구 사항](#기능-요구-사항)
@@ -93,6 +94,243 @@ graph TB
     style Future2 fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,stroke-dasharray: 5 5
     style GameEngine fill:#a78bfa,stroke:#8b5cf6,stroke-width:3px,color:#000
 ```
+
+<br>
+
+---
+
+## 📊 전체 게임 플로우
+
+로또 게임은 구입 금액 입력부터 수익률 출력까지 단계적으로 진행됩니다. 각 단계에서 검증 오류가 발생하면 해당 단계만 재입력받습니다.
+
+<details>
+<summary>📊 전체 게임 플로우차트 보기</summary>
+
+```mermaid
+flowchart TD
+    Start([게임 시작]) --> Input1[구입 금액 입력 요청]
+    Input1 --> GetAmount[사용자 입력 받기]
+    GetAmount --> ValidateAmount{구입 금액 검증}
+
+    ValidateAmount -->|1,000원 단위 아님| Error1[에러 메시지 출력]
+    ValidateAmount -->|0원 이하| Error1
+    ValidateAmount -->|통과| GenerateLotto[로또 자동 발행<br/>구입 금액 / 1,000개]
+
+    Error1 --> Input1
+
+    GenerateLotto --> PrintLotto[발행된 로또 번호 출력<br/>오름차순 정렬]
+    PrintLotto --> Input2[당첨 번호 입력 요청<br/>6개, 쉼표 구분]
+
+    Input2 --> GetWinning[사용자 입력 받기]
+    GetWinning --> ValidateWinning{당첨 번호 검증}
+
+    ValidateWinning -->|6개 아님| Error2[에러 메시지 출력]
+    ValidateWinning -->|1~45 범위 벗어남| Error2
+    ValidateWinning -->|중복 존재| Error2
+    ValidateWinning -->|통과| Input3[보너스 번호 입력 요청]
+
+    Error2 --> Input2
+
+    Input3 --> GetBonus[사용자 입력 받기]
+    GetBonus --> ValidateBonus{보너스 번호 검증}
+
+    ValidateBonus -->|1~45 범위 벗어남| Error3[에러 메시지 출력]
+    ValidateBonus -->|당첨 번호와 중복| Error3
+    ValidateBonus -->|통과| PrintHeader[당첨 통계 헤더 출력]
+
+    Error3 --> Input3
+
+    PrintHeader --> CalculateResult[당첨 내역 계산]
+    CalculateResult --> LoopLotto{모든 로또<br/>확인 완료?}
+
+    LoopLotto -->|아니오| CountMatch[당첨 번호 일치 개수 확인]
+    CountMatch --> Check5Match{5개<br/>일치?}
+
+    Check5Match -->|예| CheckBonus{보너스<br/>일치?}
+    Check5Match -->|아니오| DetermineRank[일치 개수로 등수 판정]
+
+    CheckBonus -->|예| Rank2[2등 처리]
+    CheckBonus -->|아니오| Rank3[3등 처리]
+
+    Rank2 --> LoopLotto
+    Rank3 --> LoopLotto
+    DetermineRank --> UpdateStats[등수별 당첨 개수 집계]
+    UpdateStats --> LoopLotto
+
+    LoopLotto -->|예| PrintStats[당첨 통계 출력<br/>5등~1등]
+    PrintStats --> CalcProfit[수익률 계산<br/>총 상금 / 구입 금액 × 100]
+    CalcProfit --> Round[소수점 둘째 자리 반올림]
+    Round --> PrintProfit[수익률 출력]
+    PrintProfit --> End([게임 종료])
+
+    style Start fill:#4ade80,stroke:#22c55e,stroke-width:3px,color:#000
+    style End fill:#4ade80,stroke:#22c55e,stroke-width:3px,color:#000
+    style Error1 fill:#fca5a5,stroke:#ef4444,stroke-width:2px,color:#000
+    style Error2 fill:#fca5a5,stroke:#ef4444,stroke-width:2px,color:#000
+    style Error3 fill:#fca5a5,stroke:#ef4444,stroke-width:2px,color:#000
+    style ValidateAmount fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
+    style ValidateWinning fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
+    style ValidateBonus fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
+    style GenerateLotto fill:#86efac,stroke:#22c55e,stroke-width:2px,color:#000
+    style CalculateResult fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px,color:#000
+    style Rank2 fill:#60a5fa,stroke:#3b82f6,stroke-width:2px,color:#000
+    style Rank3 fill:#60a5fa,stroke:#3b82f6,stroke-width:2px,color:#000
+    style CalcProfit fill:#34d399,stroke:#10b981,stroke-width:2px,color:#000
+```
+
+</details>
+
+<details>
+<summary>🎯 당첨 확인 로직 보기</summary>
+
+```mermaid
+flowchart TD
+    Start([로또 1장]) --> Compare[당첨 번호와 비교]
+    Compare --> Count[일치 개수 카운트]
+
+    Count --> Check{일치<br/>개수}
+
+    Check -->|6개| First[1등<br/>2,000,000,000원]
+    Check -->|5개| CheckBonus{보너스<br/>일치?}
+    Check -->|4개| Fourth[4등<br/>50,000원]
+    Check -->|3개| Fifth[5등<br/>5,000원]
+    Check -->|0~2개| NoWin[낙첨]
+
+    CheckBonus -->|예| Second[2등<br/>30,000,000원]
+    CheckBonus -->|아니오| Third[3등<br/>1,500,000원]
+
+    First --> End([등수 반환])
+    Second --> End
+    Third --> End
+    Fourth --> End
+    Fifth --> End
+    NoWin --> End
+
+    style Start fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px,color:#000
+    style End fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px,color:#000
+    style First fill:#fbbf24,stroke:#f59e0b,stroke-width:3px,color:#000
+    style Second fill:#60a5fa,stroke:#3b82f6,stroke-width:3px,color:#000
+    style Third fill:#34d399,stroke:#10b981,stroke-width:2px,color:#000
+    style Fourth fill:#86efac,stroke:#22c55e,stroke-width:2px,color:#000
+    style Fifth fill:#d1d5db,stroke:#9ca3af,stroke-width:2px,color:#000
+    style NoWin fill:#fca5a5,stroke:#ef4444,stroke-width:2px,color:#000
+```
+
+</details>
+
+<details>
+<summary>💰 수익률 계산 로직 보기</summary>
+
+```mermaid
+flowchart LR
+    Start([당첨 통계]) --> Sum[각 등수별<br/>상금 × 당첨 개수]
+    Sum --> Total[총 상금 합계]
+    Total --> Calc[수익률 = <br/>총 상금 / 구입 금액 × 100]
+    Calc --> Round[소수점 둘째 자리<br/>반올림]
+    Round --> Format[백분율 형식<br/>ex 62.5%]
+    Format --> End([출력])
+
+    style Start fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px,color:#000
+    style End fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px,color:#000
+    style Total fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
+    style Calc fill:#34d399,stroke:#10b981,stroke-width:2px,color:#000
+    style Format fill:#60a5fa,stroke:#3b82f6,stroke-width:2px,color:#000
+```
+
+</details>
+
+<br>
+
+---
+
+## 📝 구현할 기능 목록
+
+### 1. 입력 기능
+
+#### 1-1. 구입 금액 입력
+- [ ] 사용자로부터 구입 금액 입력받기
+- [ ] 구입 금액은 1,000원 단위여야 함
+- [ ] 1,000원 미만 입력 불가
+- [ ] 양의 정수만 허용 (0, 음수 불가)
+- [ ] 잘못된 입력 시 에러 메시지 출력 후 재입력
+
+#### 1-2. 당첨 번호 입력
+- [ ] 사용자로부터 당첨 번호 입력받기 (쉼표로 구분된 6개의 숫자)
+- [ ] 정확히 6개의 번호만 허용
+- [ ] 각 번호는 1~45 범위여야 함
+- [ ] 중복된 번호 입력 불가
+- [ ] 잘못된 입력 시 에러 메시지 출력 후 재입력
+
+#### 1-3. 보너스 번호 입력
+- [ ] 사용자로부터 보너스 번호 입력받기
+- [ ] 1~45 범위의 숫자여야 함
+- [ ] 당첨 번호 6개와 중복 불가
+- [ ] 잘못된 입력 시 에러 메시지 출력 후 재입력
+
+### 2. 로또 발행 기능
+
+#### 2-1. 로또 번호 생성
+- [ ] 구입 금액에 따라 로또 구매 개수 계산 (금액 / 1,000원)
+- [ ] 구매 개수만큼 로또 자동 생성
+- [ ] 각 로또는 1~45 범위에서 중복 없이 6개 번호 생성
+- [ ] 생성된 로또 번호 출력 (오름차순 정렬)
+
+#### 2-2. Lotto 클래스 검증
+- [ ] 로또 번호는 정확히 6개여야 함
+- [ ] 각 번호는 1~45 범위여야 함
+- [ ] 중복된 번호 불가
+
+### 3. 당첨 확인 기능
+
+#### 3-1. 당첨 내역 계산
+- [ ] 각 로또의 당첨 번호 일치 개수 확인
+- [ ] 5개 일치 시 보너스 번호 포함 여부 확인
+- [ ] 당첨 등수 판정
+  - 6개 일치 → 1등 (2,000,000,000원)
+  - 5개 일치 + 보너스 일치 → 2등 (30,000,000원)
+  - 5개 일치 → 3등 (1,500,000원)
+  - 4개 일치 → 4등 (50,000원)
+  - 3개 일치 → 5등 (5,000원)
+- [ ] 등수별 당첨 개수 집계
+
+#### 3-2. 수익률 계산
+- [ ] 총 상금 계산 (각 등수별 당첨 개수 × 상금)
+- [ ] 수익률 계산 ((총 상금 / 구입 금액) × 100)
+- [ ] 소수점 첫째 자리까지 표시 (둘째 자리에서 반올림)
+
+### 4. 출력 기능
+
+#### 4-1. 구매 로또 출력
+- [ ] 구매한 로또 개수 출력
+- [ ] 각 로또 번호를 오름차순으로 정렬하여 출력
+- [ ] 출력 형식: [8, 21, 23, 41, 42, 43]
+
+#### 4-2. 당첨 통계 출력
+- [ ] "당첨 통계" 헤더 출력
+- [ ] 구분선(---) 출력
+- [ ] 5등부터 1등까지 순서대로 출력
+- [ ] 출력 형식: "3개 일치 (5,000원) - 1개"
+- [ ] 당첨되지 않은 등수도 "0개"로 표시
+- [ ] 금액은 천 단위 쉼표 포함
+
+#### 4-3. 수익률 출력
+- [ ] 총 수익률 출력
+- [ ] 출력 형식: "총 수익률은 62.5%입니다."
+
+### 5. 예외 처리
+
+#### 5-1. 에러 메시지
+- [ ] 모든 에러 메시지는 "[ERROR]"로 시작
+- [ ] 구입 금액이 1,000원 단위가 아닐 때
+- [ ] 로또 번호가 1~45 범위를 벗어날 때
+- [ ] 로또 번호에 중복이 있을 때
+- [ ] 보너스 번호가 당첨 번호와 중복될 때
+
+#### 5-2. 재입력 처리
+- [ ] 구입 금액 오류 시 구입 금액만 재입력
+- [ ] 당첨 번호 오류 시 당첨 번호만 재입력
+- [ ] 보너스 번호 오류 시 보너스 번호만 재입력
+- [ ] 예외 발생 후 프로그램 종료하지 않고 계속 진행
 
 <br>
 
@@ -292,241 +530,6 @@ Randoms.pickUniqueNumbersInRange(1, 45, 6);
 <br>
 
 ---
-
-## 📝 구현할 기능 목록
-
-### 0. 전체 게임 플로우
-
-#### 📊 전체 게임 플로우차트
-
-<details>
-<summary>대형 플로우차트 보기</summary>
-
-```mermaid
-flowchart TD
-    Start([게임 시작]) --> Input1[구입 금액 입력 요청]
-    Input1 --> GetAmount[사용자 입력 받기]
-    GetAmount --> ValidateAmount{구입 금액 검증}
-
-    ValidateAmount -->|1,000원 단위 아님| Error1[에러 메시지 출력]
-    ValidateAmount -->|0원 이하| Error1
-    ValidateAmount -->|통과| GenerateLotto[로또 자동 발행<br/>구입 금액 / 1,000개]
-
-    Error1 --> Input1
-
-    GenerateLotto --> PrintLotto[발행된 로또 번호 출력<br/>오름차순 정렬]
-    PrintLotto --> Input2[당첨 번호 입력 요청<br/>6개, 쉼표 구분]
-
-    Input2 --> GetWinning[사용자 입력 받기]
-    GetWinning --> ValidateWinning{당첨 번호 검증}
-
-    ValidateWinning -->|6개 아님| Error2[에러 메시지 출력]
-    ValidateWinning -->|1~45 범위 벗어남| Error2
-    ValidateWinning -->|중복 존재| Error2
-    ValidateWinning -->|통과| Input3[보너스 번호 입력 요청]
-
-    Error2 --> Input2
-
-    Input3 --> GetBonus[사용자 입력 받기]
-    GetBonus --> ValidateBonus{보너스 번호 검증}
-
-    ValidateBonus -->|1~45 범위 벗어남| Error3[에러 메시지 출력]
-    ValidateBonus -->|당첨 번호와 중복| Error3
-    ValidateBonus -->|통과| PrintHeader[당첨 통계 헤더 출력]
-
-    Error3 --> Input3
-
-    PrintHeader --> CalculateResult[당첨 내역 계산]
-    CalculateResult --> LoopLotto{모든 로또<br/>확인 완료?}
-
-    LoopLotto -->|아니오| CountMatch[당첨 번호 일치 개수 확인]
-    CountMatch --> Check5Match{5개<br/>일치?}
-
-    Check5Match -->|예| CheckBonus{보너스<br/>일치?}
-    Check5Match -->|아니오| DetermineRank[일치 개수로 등수 판정]
-
-    CheckBonus -->|예| Rank2[2등 처리]
-    CheckBonus -->|아니오| Rank3[3등 처리]
-
-    Rank2 --> LoopLotto
-    Rank3 --> LoopLotto
-    DetermineRank --> UpdateStats[등수별 당첨 개수 집계]
-    UpdateStats --> LoopLotto
-
-    LoopLotto -->|예| PrintStats[당첨 통계 출력<br/>5등~1등]
-    PrintStats --> CalcProfit[수익률 계산<br/>총 상금 / 구입 금액 × 100]
-    CalcProfit --> Round[소수점 둘째 자리 반올림]
-    Round --> PrintProfit[수익률 출력]
-    PrintProfit --> End([게임 종료])
-
-    style Start fill:#4ade80,stroke:#22c55e,stroke-width:3px,color:#000
-    style End fill:#4ade80,stroke:#22c55e,stroke-width:3px,color:#000
-    style Error1 fill:#fca5a5,stroke:#ef4444,stroke-width:2px,color:#000
-    style Error2 fill:#fca5a5,stroke:#ef4444,stroke-width:2px,color:#000
-    style Error3 fill:#fca5a5,stroke:#ef4444,stroke-width:2px,color:#000
-    style ValidateAmount fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
-    style ValidateWinning fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
-    style ValidateBonus fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
-    style GenerateLotto fill:#86efac,stroke:#22c55e,stroke-width:2px,color:#000
-    style CalculateResult fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px,color:#000
-    style Rank2 fill:#60a5fa,stroke:#3b82f6,stroke-width:2px,color:#000
-    style Rank3 fill:#60a5fa,stroke:#3b82f6,stroke-width:2px,color:#000
-    style CalcProfit fill:#34d399,stroke:#10b981,stroke-width:2px,color:#000
-```
-
-</details>
-
-#### 🎯 당첨 확인 로직
-
-<details>
-<summary>당첨 확인 플로우 보기</summary>
-
-```mermaid
-flowchart TD
-    Start([로또 1장]) --> Compare[당첨 번호와 비교]
-    Compare --> Count[일치 개수 카운트]
-
-    Count --> Check{일치<br/>개수}
-
-    Check -->|6개| First[1등<br/>2,000,000,000원]
-    Check -->|5개| CheckBonus{보너스<br/>일치?}
-    Check -->|4개| Fourth[4등<br/>50,000원]
-    Check -->|3개| Fifth[5등<br/>5,000원]
-    Check -->|0~2개| NoWin[낙첨]
-
-    CheckBonus -->|예| Second[2등<br/>30,000,000원]
-    CheckBonus -->|아니오| Third[3등<br/>1,500,000원]
-
-    First --> End([등수 반환])
-    Second --> End
-    Third --> End
-    Fourth --> End
-    Fifth --> End
-    NoWin --> End
-
-    style Start fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px,color:#000
-    style End fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px,color:#000
-    style First fill:#fbbf24,stroke:#f59e0b,stroke-width:3px,color:#000
-    style Second fill:#60a5fa,stroke:#3b82f6,stroke-width:3px,color:#000
-    style Third fill:#34d399,stroke:#10b981,stroke-width:2px,color:#000
-    style Fourth fill:#86efac,stroke:#22c55e,stroke-width:2px,color:#000
-    style Fifth fill:#d1d5db,stroke:#9ca3af,stroke-width:2px,color:#000
-    style NoWin fill:#fca5a5,stroke:#ef4444,stroke-width:2px,color:#000
-```
-
-</details>
-
-#### 💰 수익률 계산 로직
-
-<details>
-<summary>수익률 계산 플로우 보기</summary>
-
-```mermaid
-flowchart LR
-    Start([당첨 통계]) --> Sum[각 등수별<br/>상금 × 당첨 개수]
-    Sum --> Total[총 상금 합계]
-    Total --> Calc[수익률 = <br/>총 상금 / 구입 금액 × 100]
-    Calc --> Round[소수점 둘째 자리<br/>반올림]
-    Round --> Format[백분율 형식<br/>ex 62.5%]
-    Format --> End([출력])
-
-    style Start fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px,color:#000
-    style End fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px,color:#000
-    style Total fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
-    style Calc fill:#34d399,stroke:#10b981,stroke-width:2px,color:#000
-    style Format fill:#60a5fa,stroke:#3b82f6,stroke-width:2px,color:#000
-```
-
-</details>
-
-### 1. 입력 기능
-
-#### 1-1. 구입 금액 입력
-- [ ] 사용자로부터 구입 금액 입력받기
-- [ ] 구입 금액은 1,000원 단위여야 함
-- [ ] 1,000원 미만 입력 불가
-- [ ] 양의 정수만 허용 (0, 음수 불가)
-- [ ] 잘못된 입력 시 에러 메시지 출력 후 재입력
-
-#### 1-2. 당첨 번호 입력
-- [ ] 사용자로부터 당첨 번호 입력받기 (쉼표로 구분된 6개의 숫자)
-- [ ] 정확히 6개의 번호만 허용
-- [ ] 각 번호는 1~45 범위여야 함
-- [ ] 중복된 번호 입력 불가
-- [ ] 잘못된 입력 시 에러 메시지 출력 후 재입력
-
-#### 1-3. 보너스 번호 입력
-- [ ] 사용자로부터 보너스 번호 입력받기
-- [ ] 1~45 범위의 숫자여야 함
-- [ ] 당첨 번호 6개와 중복 불가
-- [ ] 잘못된 입력 시 에러 메시지 출력 후 재입력
-
-### 2. 로또 발행 기능
-
-#### 2-1. 로또 번호 생성
-- [ ] 구입 금액에 따라 로또 구매 개수 계산 (금액 / 1,000원)
-- [ ] 구매 개수만큼 로또 자동 생성
-- [ ] 각 로또는 1~45 범위에서 중복 없이 6개 번호 생성
-- [ ] 생성된 로또 번호 출력 (오름차순 정렬)
-
-#### 2-2. Lotto 클래스 검증
-- [ ] 로또 번호는 정확히 6개여야 함
-- [ ] 각 번호는 1~45 범위여야 함
-- [ ] 중복된 번호 불가
-
-### 3. 당첨 확인 기능
-
-#### 3-1. 당첨 내역 계산
-- [ ] 각 로또의 당첨 번호 일치 개수 확인
-- [ ] 5개 일치 시 보너스 번호 포함 여부 확인
-- [ ] 당첨 등수 판정
-  - 6개 일치 → 1등 (2,000,000,000원)
-  - 5개 일치 + 보너스 일치 → 2등 (30,000,000원)
-  - 5개 일치 → 3등 (1,500,000원)
-  - 4개 일치 → 4등 (50,000원)
-  - 3개 일치 → 5등 (5,000원)
-- [ ] 등수별 당첨 개수 집계
-
-#### 3-2. 수익률 계산
-- [ ] 총 상금 계산 (각 등수별 당첨 개수 × 상금)
-- [ ] 수익률 계산 ((총 상금 / 구입 금액) × 100)
-- [ ] 소수점 첫째 자리까지 표시 (둘째 자리에서 반올림)
-
-### 4. 출력 기능
-
-#### 4-1. 구매 로또 출력
-- [ ] 구매한 로또 개수 출력
-- [ ] 각 로또 번호를 오름차순으로 정렬하여 출력
-- [ ] 출력 형식: [8, 21, 23, 41, 42, 43]
-
-#### 4-2. 당첨 통계 출력
-- [ ] "당첨 통계" 헤더 출력
-- [ ] 구분선(---) 출력
-- [ ] 5등부터 1등까지 순서대로 출력
-- [ ] 출력 형식: "3개 일치 (5,000원) - 1개"
-- [ ] 당첨되지 않은 등수도 "0개"로 표시
-- [ ] 금액은 천 단위 쉼표 포함
-
-#### 4-3. 수익률 출력
-- [ ] 총 수익률 출력
-- [ ] 출력 형식: "총 수익률은 62.5%입니다."
-
-### 5. 예외 처리
-
-#### 5-1. 에러 메시지
-- [ ] 모든 에러 메시지는 "[ERROR]"로 시작
-- [ ] 구입 금액이 1,000원 단위가 아닐 때
-- [ ] 로또 번호가 1~45 범위를 벗어날 때
-- [ ] 로또 번호에 중복이 있을 때
-- [ ] 보너스 번호가 당첨 번호와 중복될 때
-
-#### 5-2. 재입력 처리
-- [ ] 구입 금액 오류 시 구입 금액만 재입력
-- [ ] 당첨 번호 오류 시 당첨 번호만 재입력
-- [ ] 보너스 번호 오류 시 보너스 번호만 재입력
-- [ ] 예외 발생 후 프로그램 종료하지 않고 계속 진행
-
-<br>
 
 <div align="center">
 
