@@ -496,6 +496,50 @@ flowchart LR
 - **View**: 입출력만 담당 (Domain을 직접 의존하지 않음)
 - **Engine**: 게임 플로우 제어 및 재입력 처리
 
+```mermaid
+graph TB
+    Engine[Engine Layer<br/>게임 플로우 제어] --> Service[Service Layer<br/>입력 검증 & 조합]
+    Service --> Domain[Domain Layer<br/>비즈니스 로직]
+    Service --> DTO[DTO Layer<br/>데이터 전달]
+    Service --> View[View Layer<br/>입출력]
+    Domain -.DTO 변환.-> DTO
+    DTO -.전달.-> View
+
+    style Engine fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px,color:#000
+    style Service fill:#60a5fa,stroke:#3b82f6,stroke-width:2px,color:#000
+    style Domain fill:#34d399,stroke:#10b981,stroke-width:2px,color:#000
+    style DTO fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
+    style View fill:#f87171,stroke:#ef4444,stroke-width:2px,color:#000
+```
+
+### 정책 관리 및 확장성
+
+로또 게임의 규칙(범위, 개수, 가격 등)을 정책 객체로 분리하여 관리합니다.
+
+**정책 요소:**
+- 로또 번호 범위 (1~45)
+- 로또 번호 개수 (6개)
+- 로또 가격 (1,000원)
+
+**장점:**
+- 규칙 변경 시 한 곳만 수정
+- 검증 로직에서 정책 참조
+- 테스트 시 정책 주입 가능
+- 다른 복권 게임으로 확장 가능
+
+```mermaid
+graph LR
+    Policy[LottoPolicy<br/>정책 객체] --> Validator[LottoValidator<br/>검증]
+    Policy --> Generator[LottoGenerator<br/>생성]
+
+    Validator --> Lotto[Lotto<br/>도메인 객체]
+    Generator --> Lotto
+
+    style Policy fill:#fbbf24,stroke:#f59e0b,stroke-width:3px,color:#000
+    style Validator fill:#60a5fa,stroke:#3b82f6,stroke-width:2px,color:#000
+    style Generator fill:#60a5fa,stroke:#3b82f6,stroke-width:2px,color:#000
+    style Lotto fill:#34d399,stroke:#10b981,stroke-width:2px,color:#000
+```
 
 <br>
 
