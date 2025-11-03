@@ -43,56 +43,138 @@
 
 ## 🎨 설계 고민
 
-- 불필요한 추상화보다는 단순하고 읽기 쉬운 코드 작성
-- 객체는 데이터 노출보다 행동을 통한 협력 우선
-- 게임 규칙의 변경과 확장 가능성 고려
+### 어느 수준까지 확장성을 고려할 것인가?
+
+이번 프로젝트의 가장 큰 고민은 **"어디까지 확장 가능하게 만들 것인가"**였습니다.
+
+요구사항은 로또 게임 하나만 구현하는 것이지만, 실무에서는 연금복권, 스크래치 등 다양한 게임이 추가될 가능성이 있습니다. 그렇다면 이 가능성을 어느 정도 수준으로 대비해야 할까? 라는 부분을 중점적으로 고민해보았습니다.
+
+#### 확장성을 위해 시도한 것들
+
+**1. Game 인터페이스 도입**
+
+단순히 `Application → LottoGame`으로 연결할 수도 있었지만, `Game` 인터페이스를 두어 향후 다양한 게임을 추가할 수 있는 계약을 만들었습니다.
+
+```java
+public interface Game {
+    void play();
+}
+
+public class LottoGame implements Game {
+    // 로또 게임 구현
+}
+```
+
+이렇게 하면 연금복권을 추가할 때 기존 로또 코드는 전혀 수정하지 않고, 새로운 `PensionLotteryGame implements Game`만 추가하면 됩니다.
+
+**2. GameEngine을 통한 게임 실행 관리**
+
+Application이 직접 게임을 실행하지 않고, GameEngine이 중재자 역할을 하도록 했습니다.
+
+```java
+// 현재
+Game game = new LottoGame();
+GameEngine engine = new GameEngine(game);
+engine.run();
+
+// 향후 게임 선택 기능 추가 시
+GameEngine engine = new GameEngine();
+engine.selectAndRun(); // 사용자가 게임 선택
+```
+
+**3. 게임별 패키지 완전 분리**
+
+각 게임이 독립적으로 존재할 수 있도록 `game/classicLotto/` 패키지 구조를 사용했습니다.
+
+```
+game/
+├── Game.java                    # 공통 인터페이스
+└── classicLotto/                # 로또 게임
+    ├── LottoGame.java
+    ├── domain/                  # 로또 전용 도메인
+    └── view/                    # 로또 전용 뷰
+
+# 향후 추가 시
+game/
+├── classicLotto/                # 기존 코드 수정 없음
+└── pension/                     # 새 게임 추가
+    ├── PensionLotteryGame.java
+    ├── domain/
+    └── view/
+```
+
+이렇게 하면 로또 게임 수정이 연금복권에 영향을 주지 않고, 각 게임이 고유한 규칙과 입출력 방식을 가질 수 있습니다.
+
+**4. Domain과 View의 격리**
+
+View가 Domain 객체를 직접 참조하면 출력 형식 변경 시 도메인까지 수정해야 할 수 있습니다. 이를 방지하기 위해 DTO를 통해 데이터만 전달하도록 했습니다.
+
+```
+Domain (Lotto, Rank, LottoResult)
+    ↓ DTO 변환
+DTO (TicketPurchaseDTO, WinningStatisticsDTO)
+    ↓ 전달
+View (OutputView)
+```
+
+#### 의도적으로 추상화하지 않은 것들
+
+확장성도 중요하지만, YAGNI(You Aren't Gonna Need It) 원칙에 따라 현재 필요하지 않은 추상화는 피했습니다.
+
+- ❌ **Lottery 인터페이스**: 현재 Lotto 클래스 하나로 충분
+- ❌ **별도의 Validator 클래스**: 도메인 객체가 직접 검증하는 것이 더 응집도 높음
+- ❌ **Strategy 패턴**: 당첨 로직이 단순하고 변경 가능성 낮음
 
 ### 프로그램 구조
 
-게임 실행 제어가 전체 흐름을 관리하고, 각 계층은 명확한 책임을 가집니다. View는 Domain을 직접 알지 못하며, DTO를 통해 데이터를 전달받습니다.
-
 ```mermaid
-graph TB
-    Engine[게임 실행 제어] --> Service[입력 검증 & 로직 조합]
-    Service --> Domain[비즈니스 로직]
-    Service --> DTO[데이터 전달 객체]
-    Service --> View[입출력]
-    Domain -.DTO 변환.-> DTO
-    DTO -.전달.-> View
+flowchart TD
+    App[Application] --> Engine[GameEngine]
+    Engine --> Game[Game Interface]
+    Game --> Lotto[LottoGame]
 
-    style Engine fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px,color:#000
-    style Service fill:#60a5fa,stroke:#3b82f6,stroke-width:2px,color:#000
-    style Domain fill:#34d399,stroke:#10b981,stroke-width:2px,color:#000
+    Lotto --> Parser[InputParser]
+    Lotto --> Domain[Lotto Domain]
+    Lotto --> View[View Layer]
+
+    Domain --> Core[Core Models]
+    Core --> LottoClass[Lotto]
+    Core --> Winning[WinningNumbers]
+    Core --> RankEnum[Rank]
+    Core --> Result[LottoResult]
+    Core --> Generator[LottoGenerator]
+
+    Domain -.변환.-> DTO[DTO]
+    DTO --> View
+
+    style App fill:#a78bfa,stroke:#8b5cf6,stroke-width:3px,color:#000
+    style Engine fill:#60a5fa,stroke:#3b82f6,stroke-width:3px,color:#000
+    style Game fill:#fbbf24,stroke:#f59e0b,stroke-width:3px,color:#000
+    style Lotto fill:#34d399,stroke:#10b981,stroke-width:2px,color:#000
+    style Domain fill:#86efac,stroke:#22c55e,stroke-width:2px,color:#000
     style DTO fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
     style View fill:#f87171,stroke:#ef4444,stroke-width:2px,color:#000
 ```
 
-### 확장 가능성
+### 확장 시나리오
 
-게임 규칙을 분리하여 관리함으로써, 향후 다른 복권 게임이 추가되어도 기존 코드 변경 없이 확장할 수 있습니다.
+만약 연금복권이나 스크래치 게임이 추가된다면 기존 로또 코드는 수정하지 않고 새로운 게임만 추가하면 됩니다.
 
 ```mermaid
-graph TB
-    subgraph Current[현재: 로또]
-        LottoRule[규칙<br/>1-45, 6개] --> LottoGame[로또 게임]
-    end
+flowchart LR
+    App[Application] --> Engine[GameEngine]
+    Engine --> Game[Game Interface]
 
-    subgraph Future1[추후: 연금복권]
-        PensionRule[규칙<br/>1-45, 7개] --> PensionGame[연금복권]
-    end
+    Game --> Current[LottoGame<br/>✅ 구현완료]
+    Game -.향후 추가.-> Future1[PensionLotteryGame<br/>연금복권 720]
+    Game -.향후 추가.-> Future2[ScratchGame<br/>즉석복권]
 
-    subgraph Future2[추후: 스크래치]
-        ScratchRule[규칙<br/>즉석당첨] --> ScratchGame[스크래치]
-    end
-
-    GameEngine[게임 엔진] --> Current
-    GameEngine -.향후 추가.-> Future1
-    GameEngine -.향후 추가.-> Future2
-
-    style Current fill:#e0f2fe,stroke:#0ea5e9,stroke-width:2px
-    style Future1 fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,stroke-dasharray: 5 5
-    style Future2 fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,stroke-dasharray: 5 5
-    style GameEngine fill:#a78bfa,stroke:#8b5cf6,stroke-width:3px,color:#000
+    style App fill:#a78bfa,stroke:#8b5cf6,stroke-width:3px,color:#000
+    style Engine fill:#60a5fa,stroke:#3b82f6,stroke-width:3px,color:#000
+    style Game fill:#fbbf24,stroke:#f59e0b,stroke-width:3px,color:#000
+    style Current fill:#34d399,stroke:#10b981,stroke-width:2px,color:#000
+    style Future1 fill:#e5e7eb,stroke:#9ca3af,stroke-width:2px,stroke-dasharray: 5 5
+    style Future2 fill:#e5e7eb,stroke:#9ca3af,stroke-width:2px,stroke-dasharray: 5 5
 ```
 
 <br>
