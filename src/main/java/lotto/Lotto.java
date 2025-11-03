@@ -14,6 +14,7 @@ public class Lotto {
     private final List<Integer> numbers;
 
     public Lotto(List<Integer> numbers) {
+        assert numbers != null : "numbers는 null일 수 없습니다";
         validate(numbers);
         this.numbers = numbers;
     }
@@ -43,9 +44,14 @@ public class Lotto {
     }
 
     public int countMatches(List<Integer> winningNumbers) {
-        return (int) numbers.stream()
+        assert winningNumbers != null : "winningNumbers는 null일 수 없습니다";
+
+        int matchCount = (int) numbers.stream()
                 .filter(winningNumbers::contains)
                 .count();
+
+        assert matchCount >= 0 && matchCount <= LOTTO_SIZE : "일치 개수는 0~6 범위여야 합니다";
+        return matchCount;
     }
 
     public boolean contains(int number) {

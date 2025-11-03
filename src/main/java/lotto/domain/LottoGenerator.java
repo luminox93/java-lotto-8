@@ -12,6 +12,8 @@ public class LottoGenerator {
     private static final int NUMBER_COUNT = 6;
 
     public List<Lotto> generate(int count) {
+        assert count > 0 : "생성 개수는 양수여야 합니다";
+
         return Stream.generate(this::createLotto)
                 .limit(count)
                 .toList();

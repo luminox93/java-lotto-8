@@ -19,12 +19,15 @@ public class LottoResult {
     }
 
     public void addRank(Rank rank) {
+        assert rank != null : "rank는 null일 수 없습니다";
+
         if (rank.isWinning()) {
             result.put(rank, result.get(rank) + 1);
         }
     }
 
     public int countOf(Rank rank) {
+        assert rank != null : "rank는 null일 수 없습니다";
         return result.getOrDefault(rank, 0);
     }
 
@@ -35,6 +38,8 @@ public class LottoResult {
     }
 
     public double calculateProfitRate(int purchaseAmount) {
+        assert purchaseAmount > 0 : "구입 금액은 양수여야 합니다";
+
         long totalPrize = calculateTotalPrize();
         return (double) totalPrize / purchaseAmount * 100;
     }

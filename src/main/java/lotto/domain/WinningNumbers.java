@@ -14,6 +14,7 @@ public class WinningNumbers {
     private final int bonusNumber;
 
     public WinningNumbers(List<Integer> winningNumbers, int bonusNumber) {
+        assert winningNumbers != null : "winningNumbers는 null일 수 없습니다";
         this.winningNumbers = new Lotto(winningNumbers);
         validateBonusNumber(bonusNumber);
         this.bonusNumber = bonusNumber;
@@ -37,8 +38,11 @@ public class WinningNumbers {
     }
 
     public Rank match(Lotto lotto) {
+        assert lotto != null : "lotto는 null일 수 없습니다";
+
         int matchCount = lotto.countMatches(winningNumbers.getNumbers());
         boolean bonusMatch = lotto.contains(bonusNumber);
+
         return Rank.of(matchCount, bonusMatch);
     }
 }
