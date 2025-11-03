@@ -1,7 +1,7 @@
 package lotto.game.classicLotto;
 
 import lotto.game.classicLotto.domain.exception.InvalidLottoNumberException;
-import lotto.game.classicLotto.view.messages.ErrorMessage;
+import lotto.game.classicLotto.view.messages.ClassicLottoErrorMessage;
 
 import java.util.HashSet;
 import java.util.List;
@@ -27,19 +27,19 @@ public class Lotto {
 
     private void validateSize(List<Integer> numbers) {
         if (numbers.size() != LOTTO_SIZE) {
-            throw new InvalidLottoNumberException(ErrorMessage.INVALID_LOTTO_SIZE, LOTTO_SIZE);
+            throw new InvalidLottoNumberException(ClassicLottoErrorMessage.INVALID_LOTTO_SIZE, LOTTO_SIZE);
         }
     }
 
     private void validateRange(List<Integer> numbers) {
         if (numbers.stream().anyMatch(number -> number < MIN_NUMBER || number > MAX_NUMBER)) {
-            throw new InvalidLottoNumberException(ErrorMessage.INVALID_NUMBER_RANGE, MIN_NUMBER, MAX_NUMBER);
+            throw new InvalidLottoNumberException(ClassicLottoErrorMessage.INVALID_NUMBER_RANGE, MIN_NUMBER, MAX_NUMBER);
         }
     }
 
     private void validateDuplicate(List<Integer> numbers) {
         if (numbers.size() != new HashSet<>(numbers).size()) {
-            throw new InvalidLottoNumberException(ErrorMessage.DUPLICATE_NUMBERS);
+            throw new InvalidLottoNumberException(ClassicLottoErrorMessage.DUPLICATE_NUMBERS);
         }
     }
 

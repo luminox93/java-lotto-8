@@ -1,21 +1,21 @@
 package lotto.game.classicLotto.domain.exception;
 
-import lotto.game.classicLotto.view.messages.ErrorMessage;
+import lotto.game.classicLotto.view.messages.ClassicLottoErrorMessage;
 
 public class InvalidBonusNumberException extends IllegalArgumentException {
-    private final ErrorMessage errorMessage;
+    private final ClassicLottoErrorMessage errorMessage;
 
-    public InvalidBonusNumberException(ErrorMessage errorMessage) {
+    public InvalidBonusNumberException(ClassicLottoErrorMessage errorMessage) {
         super(errorMessage.getMessage());
         this.errorMessage = errorMessage;
     }
 
-    public InvalidBonusNumberException(ErrorMessage errorMessage, Object... args) {
+    public InvalidBonusNumberException(ClassicLottoErrorMessage errorMessage, Object... args) {
         super(errorMessage.format(args));
         this.errorMessage = errorMessage;
     }
 
-    public ErrorMessage getErrorMessage() {
+    public ClassicLottoErrorMessage getErrorMessage() {
         return errorMessage;
     }
 }

@@ -2,7 +2,7 @@ package lotto.game.classicLotto.domain;
 
 import lotto.game.classicLotto.Lotto;
 import lotto.game.classicLotto.domain.exception.InvalidBonusNumberException;
-import lotto.game.classicLotto.view.messages.ErrorMessage;
+import lotto.game.classicLotto.view.messages.ClassicLottoErrorMessage;
 
 import java.util.List;
 
@@ -27,13 +27,13 @@ public class WinningNumbers {
 
     private void validateBonusRange(int bonusNumber) {
         if (bonusNumber < MIN_NUMBER || bonusNumber > MAX_NUMBER) {
-            throw new InvalidBonusNumberException(ErrorMessage.INVALID_NUMBER_RANGE, MIN_NUMBER, MAX_NUMBER);
+            throw new InvalidBonusNumberException(ClassicLottoErrorMessage.INVALID_NUMBER_RANGE, MIN_NUMBER, MAX_NUMBER);
         }
     }
 
     private void validateBonusDuplicate(int bonusNumber) {
         if (winningNumbers.contains(bonusNumber)) {
-            throw new InvalidBonusNumberException(ErrorMessage.DUPLICATE_BONUS_NUMBER);
+            throw new InvalidBonusNumberException(ClassicLottoErrorMessage.DUPLICATE_BONUS_NUMBER);
         }
     }
 
