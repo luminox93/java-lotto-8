@@ -1,8 +1,12 @@
 package lotto;
 
+import lotto.engine.GameEngine;
+import lotto.game.Game;
+
 public class Application {
     public static void main(String[] args) {
-        LottoGame game = new LottoGame();
-        game.play();
+        Game game = new LottoGame();
+        GameEngine engine = new GameEngine(game);
+        engine.run();
     }
 }

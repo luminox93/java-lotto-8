@@ -13,8 +13,9 @@ import lotto.view.dto.WinningStatisticsDTO;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
+import lotto.game.Game;
 
-public class LottoGame {
+public class LottoGame implements Game {
     private static final int LOTTO_PRICE = 1000;
 
     private final InputView inputView;
