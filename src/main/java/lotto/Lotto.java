@@ -1,8 +1,16 @@
 package lotto;
 
+import lotto.domain.exception.InvalidLottoNumberException;
+import lotto.view.messages.ErrorMessage;
+
+import java.util.HashSet;
 import java.util.List;
 
 public class Lotto {
+    private static final int LOTTO_SIZE = 6;
+    private static final int MIN_NUMBER = 1;
+    private static final int MAX_NUMBER = 45;
+
     private final List<Integer> numbers;
 
     public Lotto(List<Integer> numbers) {
@@ -11,10 +19,40 @@ public class Lotto {
     }
 
     private void validate(List<Integer> numbers) {
-        if (numbers.size() != 6) {
-            throw new IllegalArgumentException("[ERROR] 로또 번호는 6개여야 합니다.");
+        validateSize(numbers);
+        validateRange(numbers);
+        validateDuplicate(numbers);
+    }
+
+    private void validateSize(List<Integer> numbers) {
+        if (numbers.size() != LOTTO_SIZE) {
+            throw new InvalidLottoNumberException(ErrorMessage.INVALID_LOTTO_SIZE, LOTTO_SIZE);
         }
     }
 
-    // TODO: 추가 기능 구현
+    private void validateRange(List<Integer> numbers) {
+        if (numbers.stream().anyMatch(number -> number < MIN_NUMBER || number > MAX_NUMBER)) {
+            throw new InvalidLottoNumberException(ErrorMessage.INVALID_NUMBER_RANGE, MIN_NUMBER, MAX_NUMBER);
+        }
+    }
+
+    private void validateDuplicate(List<Integer> numbers) {
+        if (numbers.size() != new HashSet<>(numbers).size()) {
+            throw new InvalidLottoNumberException(ErrorMessage.DUPLICATE_NUMBERS);
+        }
+    }
+
+    public int countMatches(List<Integer> winningNumbers) {
+        return (int) numbers.stream()
+                .filter(winningNumbers::contains)
+                .count();
+    }
+
+    public boolean contains(int number) {
+        return numbers.contains(number);
+    }
+
+    public List<Integer> getNumbers() {
+        return List.copyOf(numbers);
+    }
 }
