@@ -1,7 +1,7 @@
 package lotto.domain;
 
 import camp.nextstep.edu.missionutils.Randoms;
-import lotto.Lotto;
+import lotto.game.classicLotto.Lotto;
 
 import java.util.List;
 import java.util.stream.Stream;

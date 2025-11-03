@@ -1,6 +1,6 @@
 package lotto.domain;
 
-import lotto.Lotto;
+import lotto.game.classicLotto.Lotto;
 import lotto.domain.exception.InvalidBonusNumberException;
 import lotto.view.messages.ErrorMessage;
 

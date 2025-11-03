@@ -1,4 +1,4 @@
-package lotto;
+package lotto.game.classicLotto;
 
 import lotto.domain.exception.InvalidLottoNumberException;
 import lotto.view.messages.ErrorMessage;

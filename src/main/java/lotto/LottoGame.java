@@ -14,6 +14,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
 import lotto.game.Game;
+import lotto.game.classicLotto.Lotto;
 
 public class LottoGame implements Game {
     private static final int LOTTO_PRICE = 1000;
