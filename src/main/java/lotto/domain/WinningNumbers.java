@@ -6,14 +6,14 @@ import lotto.view.messages.ErrorMessage;
 
 import java.util.List;
 
-public class WinningLotto {
+public class WinningNumbers {
     private static final int MIN_NUMBER = 1;
     private static final int MAX_NUMBER = 45;
 
     private final Lotto winningNumbers;
     private final int bonusNumber;
 
-    public WinningLotto(List<Integer> winningNumbers, int bonusNumber) {
+    public WinningNumbers(List<Integer> winningNumbers, int bonusNumber) {
         this.winningNumbers = new Lotto(winningNumbers);
         validateBonusNumber(bonusNumber);
         this.bonusNumber = bonusNumber;
