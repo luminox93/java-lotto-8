@@ -1,4 +1,4 @@
-package lotto;
+package lotto.game.classicLotto;
 
 import lotto.game.classicLotto.domain.LottoGenerator;
 import lotto.game.classicLotto.domain.LottoResult;

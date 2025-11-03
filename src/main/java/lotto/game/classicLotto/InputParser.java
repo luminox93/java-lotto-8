@@ -1,4 +1,4 @@
-package lotto;
+package lotto.game.classicLotto;
 
 import lotto.game.classicLotto.domain.exception.InvalidPurchaseAmountException;
 import lotto.game.classicLotto.view.messages.ErrorMessage;
