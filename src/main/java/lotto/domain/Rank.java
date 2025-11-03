@@ -1,6 +1,7 @@
 package lotto.domain;
 
 import java.util.Arrays;
+import java.util.List;
 
 public enum Rank {
     FIRST(6, false, 2_000_000_000),
@@ -21,6 +22,8 @@ public enum Rank {
     }
 
     public static Rank of(int matchCount, boolean bonusMatch) {
+        assert matchCount >= 0 && matchCount <= 6 : "일치 개수는 0~6 범위여야 합니다";
+
         return Arrays.stream(values())
                 .filter(rank -> rank != NONE)
                 .filter(rank -> rank.matchCount == matchCount)
@@ -43,5 +46,11 @@ public enum Rank {
 
     public boolean isWinning() {
         return this != NONE;
+    }
+
+    public static List<Rank> getWinningRanks() {
+        return Arrays.stream(values())
+                .filter(Rank::isWinning)
+                .toList();
     }
 }
