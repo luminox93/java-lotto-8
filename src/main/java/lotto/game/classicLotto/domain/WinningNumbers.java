@@ -1,8 +1,8 @@
-package lotto.domain;
+package lotto.game.classicLotto.domain;
 
 import lotto.game.classicLotto.Lotto;
-import lotto.domain.exception.InvalidBonusNumberException;
-import lotto.view.messages.ErrorMessage;
+import lotto.game.classicLotto.domain.exception.InvalidBonusNumberException;
+import lotto.game.classicLotto.view.messages.ErrorMessage;
 
 import java.util.List;
 

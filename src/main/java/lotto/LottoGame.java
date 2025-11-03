@@ -1,14 +1,14 @@
 package lotto;
 
-import lotto.domain.LottoGenerator;
-import lotto.domain.LottoResult;
-import lotto.domain.Rank;
-import lotto.domain.WinningNumbers;
-import lotto.view.InputView;
-import lotto.view.OutputView;
-import lotto.view.dto.RankStatistic;
-import lotto.view.dto.TicketPurchaseDTO;
-import lotto.view.dto.WinningStatisticsDTO;
+import lotto.game.classicLotto.domain.LottoGenerator;
+import lotto.game.classicLotto.domain.LottoResult;
+import lotto.game.classicLotto.domain.Rank;
+import lotto.game.classicLotto.domain.WinningNumbers;
+import lotto.game.classicLotto.view.InputView;
+import lotto.game.classicLotto.view.OutputView;
+import lotto.game.classicLotto.view.dto.RankStatistic;
+import lotto.game.classicLotto.view.dto.TicketPurchaseDTO;
+import lotto.game.classicLotto.view.dto.WinningStatisticsDTO;
 
 import java.util.Comparator;
 import java.util.List;

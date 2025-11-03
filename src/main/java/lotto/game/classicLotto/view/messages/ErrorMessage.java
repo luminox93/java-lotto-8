@@ -1,4 +1,4 @@
-package lotto.view.messages;
+package lotto.game.classicLotto.view.messages;
 
 public enum ErrorMessage {
     INVALID_PURCHASE_AMOUNT("[ERROR] 구입 금액은 %d원 단위여야 합니다."),

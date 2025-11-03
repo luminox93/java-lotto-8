@@ -1,7 +1,7 @@
 package lotto;
 
-import lotto.domain.exception.InvalidPurchaseAmountException;
-import lotto.view.messages.ErrorMessage;
+import lotto.game.classicLotto.domain.exception.InvalidPurchaseAmountException;
+import lotto.game.classicLotto.view.messages.ErrorMessage;
 
 import java.util.Arrays;
 import java.util.List;

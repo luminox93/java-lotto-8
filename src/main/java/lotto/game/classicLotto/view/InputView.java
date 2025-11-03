@@ -1,7 +1,7 @@
-package lotto.view;
+package lotto.game.classicLotto.view;
 
 import camp.nextstep.edu.missionutils.Console;
-import lotto.view.messages.InputMessage;
+import lotto.game.classicLotto.view.messages.InputMessage;
 
 public class InputView {
     public String readPurchaseAmount() {

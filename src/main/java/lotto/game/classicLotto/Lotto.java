@@ -1,7 +1,7 @@
 package lotto.game.classicLotto;
 
-import lotto.domain.exception.InvalidLottoNumberException;
-import lotto.view.messages.ErrorMessage;
+import lotto.game.classicLotto.domain.exception.InvalidLottoNumberException;
+import lotto.game.classicLotto.view.messages.ErrorMessage;
 
 import java.util.HashSet;
 import java.util.List;

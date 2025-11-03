@@ -1,10 +1,10 @@
-package lotto.view;
+package lotto.game.classicLotto.view;
 
 import java.util.List;
-import lotto.view.dto.RankStatistic;
-import lotto.view.dto.TicketPurchaseDTO;
-import lotto.view.dto.WinningStatisticsDTO;
-import lotto.view.messages.OutputMessage;
+import lotto.game.classicLotto.view.dto.RankStatistic;
+import lotto.game.classicLotto.view.dto.TicketPurchaseDTO;
+import lotto.game.classicLotto.view.dto.WinningStatisticsDTO;
+import lotto.game.classicLotto.view.messages.OutputMessage;
 
 public class OutputView {
     public void printTicketPurchase(TicketPurchaseDTO dto) {

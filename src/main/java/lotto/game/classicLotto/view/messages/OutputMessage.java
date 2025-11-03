@@ -1,4 +1,4 @@
-package lotto.view.messages;
+package lotto.game.classicLotto.view.messages;
 
 public enum OutputMessage {
     PURCHASE_COUNT("%d개를 구매했습니다."),

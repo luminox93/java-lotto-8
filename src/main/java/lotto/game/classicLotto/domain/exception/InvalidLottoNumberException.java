@@ -1,6 +1,6 @@
-package lotto.domain.exception;
+package lotto.game.classicLotto.domain.exception;
 
-import lotto.view.messages.ErrorMessage;
+import lotto.game.classicLotto.view.messages.ErrorMessage;
 
 public class InvalidLottoNumberException extends IllegalArgumentException {
     private final ErrorMessage errorMessage;

@@ -1,4 +1,4 @@
-package lotto.view.dto;
+package lotto.game.classicLotto.view.dto;
 
 import java.util.List;
 
